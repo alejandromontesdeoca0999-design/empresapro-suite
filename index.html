@@ -1,0 +1,1564 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EmpresaPro Suite - Multiempresa</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- LOGIN OVERLAY -->
+    <div id="authOverlay" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 space-y-6">
+            <div class="text-center space-y-2">
+                <div class="inline-flex bg-indigo-600 p-3 rounded-2xl text-amber-300 shadow-lg shadow-indigo-500/30">
+                    <i class="fa-solid fa-chart-line text-2xl"></i>
+                </div>
+                <h1 class="font-bold text-2xl text-slate-900">EmpresaPro Suite</h1>
+                <p class="text-xs text-slate-500">Sistema Multiempresa de Gestión Comercial y Financiera</p>
+            </div>
+
+            <div class="flex border-b border-slate-200">
+                <button onclick="switchAuthMode('login')" id="tabLogin" class="flex-1 pb-3 text-sm font-semibold text-indigo-600 border-b-2 border-indigo-600 transition">Iniciar Sesión</button>
+                <button onclick="switchAuthMode('register')" id="tabRegister" class="flex-1 pb-3 text-sm font-medium text-slate-400 hover:text-slate-600 transition">Crear Empresa</button>
+                <button onclick="switchAuthMode('manage')" id="tabManage" class="flex-1 pb-3 text-sm font-medium text-slate-400 hover:text-slate-600 transition">Eliminar Empresa</button>
+            </div>
+
+            <!-- Form Login -->
+            <form id="formLogin" onsubmit="handleLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Nombre de la Empresa / Usuario</label>
+                    <input type="text" id="loginUser" required placeholder="Ej. am tecnirrodamientos" class="w-full border border-slate-300 rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Contraseña</label>
+                    <input type="password" id="loginPass" required placeholder="••••••••" class="w-full border border-slate-300 rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-semibold shadow-lg shadow-indigo-600/20 transition">Entrar al Sistema</button>
+            </form>
+
+            <!-- Form Register -->
+            <form id="formRegister" onsubmit="handleRegister(event)" class="space-y-4 hidden">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Nombre de la Nueva Empresa</label>
+                    <input type="text" id="regUser" required placeholder="Ej. am tecnirrodamientos" class="w-full border border-slate-300 rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Contraseña</label>
+                    <input type="password" id="regPass" required placeholder="••••••••" class="w-full border border-slate-300 rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Código Maestro de Desarrollador</label>
+                    <input type="password" id="regMasterCode" required placeholder="Código proporcionado por el dev" class="w-full border border-slate-300 rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none font-mono">
+                </div>
+                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-semibold shadow-lg shadow-emerald-600/20 transition">Registrar Empresa</button>
+            </form>
+
+            <!-- Form Delete / Manage Companies -->
+            <form id="formManage" onsubmit="handleDeleteCompany(event)" class="space-y-4 hidden">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Seleccionar Empresa a Eliminar</label>
+                    <select id="deleteCompanySelect" required class="w-full border border-slate-300 rounded-xl p-3 text-sm bg-white focus:ring-2 focus:ring-rose-500 outline-none">
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Código Maestro de Desarrollador</label>
+                    <input type="password" id="delMasterCode" required placeholder="Código requerido para eliminar" class="w-full border border-slate-300 rounded-xl p-3 text-sm focus:ring-2 focus:ring-rose-500 outline-none font-mono">
+                </div>
+                <button type="submit" class="w-full bg-rose-600 hover:bg-rose-700 text-white py-3 rounded-xl font-semibold shadow-lg shadow-rose-600/20 transition">Eliminar Empresa Permanentemente</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Top Navigation -->
+    <header class="bg-indigo-900 text-white shadow-md sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-indigo-700 p-2 rounded-lg text-amber-400">
+                        <i class="fa-solid fa-chart-line text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-lg leading-tight flex items-center space-x-2">
+                            <span>EmpresaPro Suite</span>
+                            <span id="currentCompanyBadge" class="bg-indigo-800 text-amber-300 text-xs px-2 py-0.5 rounded-full border border-indigo-700"></span>
+                        </h1>
+                        <p class="text-xs text-indigo-300">Gestión Comercial y Financiera Multiempresa</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <button onclick="saveCurrentCompanyData()" class="bg-emerald-600 hover:bg-emerald-500 text-xs px-3 py-1.5 rounded font-semibold transition flex items-center space-x-1 shadow">
+                        <i class="fa-solid fa-cloud-arrow-up"></i> <span>Guardar Datos</span>
+                    </button>
+                    <button onclick="exportData()" class="bg-indigo-700 hover:bg-indigo-600 text-xs px-3 py-1.5 rounded font-medium transition flex items-center space-x-1">
+                        <i class="fa-solid fa-download"></i> <span>Exportar</span>
+                    </button>
+                    <button onclick="logout()" class="bg-rose-600 hover:bg-rose-500 text-xs px-3 py-1.5 rounded font-medium transition flex items-center space-x-1">
+                        <i class="fa-solid fa-right-from-bracket"></i> <span>Cerrar Sesión</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col md:flex-row gap-6">
+        
+        <!-- Sidebar Navigation -->
+        <aside class="w-full md:w-64 bg-white rounded-xl shadow-sm border border-slate-200 p-4 shrink-0 h-fit">
+            <nav class="space-y-1">
+                <button onclick="switchTab('clientes')" id="nav-clientes" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium text-indigo-700 bg-indigo-50 transition">
+                    <i class="fa-solid fa-users w-5"></i> <span>Clientes</span>
+                </button>
+                <button onclick="switchTab('inventario')" id="nav-inventario" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition">
+                    <i class="fa-solid fa-boxes-stacked w-5"></i> <span>Inventario</span>
+                </button>
+                <button onclick="switchTab('ventas')" id="nav-ventas" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition">
+                    <i class="fa-solid fa-cash-register w-5"></i> <span>Nueva Venta</span>
+                </button>
+                <button onclick="switchTab('registro-ventas')" id="nav-registro-ventas" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition">
+                    <i class="fa-solid fa-chart-pie w-5"></i> <span>Registro de Ventas</span>
+                </button>
+                <button onclick="switchTab('movimientos')" id="nav-movimientos" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition">
+                    <i class="fa-solid fa-clock-rotate-left w-5"></i> <span>Historial Movimientos</span>
+                </button>
+                <button onclick="switchTab('estado-mensual')" id="nav-estado-mensual" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition">
+                    <i class="fa-solid fa-file-invoice-dollar w-5"></i> <span>Estado Mensual</span>
+                </button>
+                <button onclick="switchTab('estado-anual')" id="nav-estado-anual" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition">
+                    <i class="fa-solid fa-building-columns w-5"></i> <span>Estado Anual & Gráfica</span>
+                </button>
+            </nav>
+        </aside>
+
+        <!-- Content Area -->
+        <main class="flex-1 bg-white rounded-xl shadow-sm border border-slate-200 p-6 overflow-hidden">
+            
+            <!-- CLIENTES TAB -->
+            <section id="tab-clientes" class="space-y-6">
+                <div class="flex justify-between items-center border-b pb-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900">Gestión de Clientes</h2>
+                        <p class="text-sm text-slate-500">Registro y clasificación automática de clientes.</p>
+                    </div>
+                    <button onclick="openClientModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition">
+                        <i class="fa-solid fa-user-plus mr-1.5"></i> Nuevo Cliente
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-600 text-xs uppercase font-semibold">
+                                <th class="p-3">Nombre</th>
+                                <th class="p-3">Teléfono</th>
+                                <th class="p-3">Correo</th>
+                                <th class="p-3">Estado</th>
+                                <th class="p-3">Última Compra</th>
+                                <th class="p-3 text-right">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="clientsTableBody" class="divide-y divide-slate-200 text-sm">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- INVENTARIO TAB -->
+            <section id="tab-inventario" class="hidden space-y-6">
+                <div class="flex justify-between items-center border-b pb-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900">Control de Inventario</h2>
+                        <p class="text-sm text-slate-500">Promedio ponderado, stock y precios de venta.</p>
+                    </div>
+                    <button onclick="openInventoryModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition">
+                        <i class="fa-solid fa-plus-circle mr-1.5"></i> Ingreso de Inventario
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-600 text-xs uppercase font-semibold">
+                                <th class="p-3">Producto</th>
+                                <th class="p-3 text-center">Cantidad Stock</th>
+                                <th class="p-3 text-right">Costo Promedio (Pond.)</th>
+                                <th class="p-3 text-right">Precio Venta</th>
+                                <th class="p-3 text-right">% Ganancia</th>
+                                <th class="p-3 text-right">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventoryTableBody" class="divide-y divide-slate-200 text-sm">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- NUEVA VENTA TAB -->
+            <section id="tab-ventas" class="hidden space-y-6">
+                <div class="border-b pb-4">
+                    <h2 class="text-xl font-bold text-slate-900">Salida de Inventario / Venta</h2>
+                    <p class="text-sm text-slate-500">Seleccione el cliente y los productos a facturar.</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 space-y-4">
+                        <!-- Buscador de Clientes -->
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+                            <label class="block text-sm font-semibold text-slate-800">Buscar y Seleccionar Cliente</label>
+                            <input type="text" id="clientSearchInput" oninput="filterClientsList()" placeholder="Escriba nombre, teléfono o correo del cliente..." class="w-full border border-slate-300 rounded-lg p-2.5 text-sm bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
+                            
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Cliente Seleccionado o de la Lista:</label>
+                                <select id="saleClient" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm bg-white font-medium text-indigo-900">
+                                    <!-- Populated by JS -->
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+                            <h3 class="font-semibold text-sm text-slate-800">Agregar Producto a la Venta</h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <div class="sm:col-span-2">
+                                    <select id="saleProductSelect" class="w-full border border-slate-300 rounded-lg p-2 text-sm bg-white">
+                                        <!-- Populated by JS -->
+                                    </select>
+                                </div>
+                                <div>
+                                    <input type="number" id="saleQtyInput" min="1" value="1" placeholder="Cantidad" class="w-full border border-slate-300 rounded-lg p-2 text-sm bg-white">
+                                </div>
+                            </div>
+                            <button onclick="addItemToCart()" class="w-full bg-slate-800 hover:bg-slate-900 text-white py-2 rounded-lg text-sm font-medium transition">
+                                <i class="fa-solid fa-cart-plus mr-1"></i> Añadir al Carrito
+                            </button>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-slate-100 text-slate-600 text-xs uppercase font-semibold">
+                                        <th class="p-2.5">Producto</th>
+                                        <th class="p-2.5 text-center">Cant</th>
+                                        <th class="p-2.5 text-right">Precio</th>
+                                        <th class="p-2.5 text-right">Subtotal</th>
+                                        <th class="p-2.5 text-center">Quitar</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cartTableBody" class="divide-y divide-slate-200 text-sm">
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50 p-5 rounded-xl border border-slate-200 flex flex-col justify-between space-y-4 h-fit">
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-base border-b pb-2">Resumen de Venta</h3>
+                            <div class="space-y-2 mt-4 text-sm">
+                                <div class="flex justify-between text-slate-600">
+                                    <span>Subtotal:</span>
+                                    <span id="cartSubtotal">$0.00</span>
+                                </div>
+                                <div class="flex justify-between text-slate-600">
+                                    <span>Impuestos (0%):</span>
+                                    <span>$0.00</span>
+                                </div>
+                                <div class="flex justify-between text-slate-900 font-bold text-lg pt-2 border-t">
+                                    <span>Total:</span>
+                                    <span id="cartTotal">$0.00</span>
+                                </div>
+                            </div>
+                        </div>
+                        <button onclick="processSale()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-lg font-semibold shadow transition flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-check-circle"></i> <span>Completar Venta y Facturar</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- REGISTRO DE VENTAS TAB -->
+            <section id="tab-registro-ventas" class="hidden space-y-6">
+                <div class="border-b pb-4">
+                    <h2 class="text-xl font-bold text-slate-900">Registro y Ranking de Ventas</h2>
+                    <p class="text-sm text-slate-500">Productos organizados de más vendidos a menos vendidos.</p>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-600 text-xs uppercase font-semibold">
+                                <th class="p-3">Rank</th>
+                                <th class="p-3">Producto</th>
+                                <th class="p-3 text-center">Total Unidades Vendidas</th>
+                                <th class="p-3 text-right">Ingresos Generados</th>
+                            </tr>
+                        </thead>
+                        <tbody id="salesRankingTableBody" class="divide-y divide-slate-200 text-sm">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="border-t pt-6">
+                    <h3 class="font-bold text-slate-800 text-base mb-3">Historial de Transacciones de Venta</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-100 text-slate-600 text-xs uppercase font-semibold">
+                                    <th class="p-3">Factura ID</th>
+                                    <th class="p-3">Fecha</th>
+                                    <th class="p-3">Cliente</th>
+                                    <th class="p-3 text-right">Total</th>
+                                    <th class="p-3 text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transactionsTableBody" class="divide-y divide-slate-200 text-sm">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- HISTORIAL DE MOVIMIENTOS TAB -->
+            <section id="tab-movimientos" class="hidden space-y-6">
+                <div class="border-b pb-4">
+                    <h2 class="text-xl font-bold text-slate-900">Historial de Movimientos</h2>
+                    <p class="text-sm text-slate-500">Auditoría en tiempo real de todas las operaciones de la empresa.</p>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-600 text-xs uppercase font-semibold">
+                                <th class="p-3">Fecha y Hora</th>
+                                <th class="p-3">Tipo de Movimiento</th>
+                                <th class="p-3">Descripción</th>
+                                <th class="p-3 text-right">Monto / Impacto</th>
+                            </tr>
+                        </thead>
+                        <tbody id="movementsTableBody" class="divide-y divide-slate-200 text-sm">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- ESTADO DE CUENTA MENSUAL TAB -->
+            <section id="tab-estado-mensual" class="hidden space-y-6">
+                <div class="flex justify-between items-center border-b pb-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900">Estado de Cuenta Mensual (Periodo 1 - 30)</h2>
+                        <p class="text-sm text-slate-500">Control contable diario y gastos esporádicos.</p>
+                    </div>
+                    <div class="flex space-x-2">
+                        <select id="selectMonth" onchange="renderMonthlyState()" class="border border-slate-300 rounded-lg p-2 text-sm bg-white">
+                            <option value="1">Enero</option>
+                            <option value="2">Febrero</option>
+                            <option value="3" selected>Marzo</option>
+                            <option value="4">Abril</option>
+                            <option value="5">Mayo</option>
+                            <option value="6">Junio</option>
+                            <option value="7">Julio</option>
+                            <option value="8">Agosto</option>
+                            <option value="9">Septiembre</option>
+                            <option value="10">Octubre</option>
+                            <option value="11">Noviembre</option>
+                            <option value="12">Diciembre</option>
+                        </select>
+                        <button onclick="openSporadicExpenseModal()" class="bg-amber-600 hover:bg-amber-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition">
+                            <i class="fa-solid fa-receipt mr-1"></i> Registrar Gasto Esporádico
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Resumen tarjetas mensuales -->
+                <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <p class="text-xs text-slate-500 font-semibold uppercase">Ventas Totales Mes</p>
+                        <p id="monthlyTotalSales" class="text-xl font-bold text-slate-900 mt-1">$0.00</p>
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <p class="text-xs text-slate-500 font-semibold uppercase">Ganancia Bruta</p>
+                        <p id="monthlyGrossProfit" class="text-xl font-bold text-emerald-600 mt-1">$0.00</p>
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <p class="text-xs text-slate-500 font-semibold uppercase">Gastos Esporádicos</p>
+                        <p id="monthlySporadicExpenses" class="text-xl font-bold text-rose-600 mt-1">$0.00</p>
+                    </div>
+                    <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-100">
+                        <p class="text-xs text-indigo-600 font-semibold uppercase">Ganancia Neta Mensual</p>
+                        <p id="monthlyNetProfit" class="text-xl font-bold text-indigo-900 mt-1">$0.00</p>
+                    </div>
+                </div>
+
+                <!-- Tabla de dias 1 al 30 -->
+                <div class="overflow-x-auto mt-4">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-600 text-xs uppercase font-semibold">
+                                <th class="p-3">Día Periodo</th>
+                                <th class="p-3 text-right">Ventas Diarias</th>
+                                <th class="p-3 text-right">Ganancia Bruta Diaria</th>
+                                <th class="p-3 text-right">Gastos Esporádicos Día</th>
+                                <th class="p-3 text-right">Ganancia Neta Día</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dailyPeriodTableBody" class="divide-y divide-slate-200 text-sm">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- ESTADO DE CUENTA ANUAL TAB -->
+            <section id="tab-estado-anual" class="hidden space-y-6">
+                <div class="flex justify-between items-center border-b pb-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900">Estado de Cuenta Anual & Análisis Financiero</h2>
+                        <p class="text-sm text-slate-500">Gastos fijos, punto de equilibrio y gráfica anual.</p>
+                    </div>
+                    <button onclick="openFixedExpensesModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+                        <i class="fa-solid fa-sliders mr-1"></i> Configurar Gastos Fijos
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <p class="text-xs text-slate-500 font-semibold uppercase">Ventas Anuales</p>
+                        <p id="annualSales" class="text-xl font-bold text-slate-900 mt-1">$0.00</p>
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <p class="text-xs text-slate-500 font-semibold uppercase">Costo de Operación Total</p>
+                        <p id="annualOpCost" class="text-xl font-bold text-rose-600 mt-1">$0.00</p>
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <p class="text-xs text-slate-500 font-semibold uppercase">Punto de Equilibrio (Mínimo)</p>
+                        <p id="annualMinSales" class="text-xl font-bold text-amber-600 mt-1">$0.00</p>
+                    </div>
+                    <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-100">
+                        <p class="text-xs text-emerald-600 font-semibold uppercase">Ganancia Real Anual</p>
+                        <p id="annualRealProfit" class="text-xl font-bold text-emerald-800 mt-1">$0.00</p>
+                    </div>
+                </div>
+
+                <!-- Gráfico Lineal Anual -->
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <h3 class="font-bold text-slate-800 text-sm mb-3">Gráfica Anual: Ventas vs Costos de Operación vs Ganancias</h3>
+                    <div class="relative h-72 w-full">
+                        <canvas id="annualLineChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Desglose por Mes -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-600 text-xs uppercase font-semibold">
+                                <th class="p-3">Mes</th>
+                                <th class="p-3 text-right">Ventas Mensuales</th>
+                                <th class="p-3 text-right">Ganancia Bruta</th>
+                                <th class="p-3 text-right">Gastos Esporádicos</th>
+                                <th class="p-3 text-right">Gastos Fijos Asignados</th>
+                                <th class="p-3 text-right">Ganancia Real</th>
+                            </tr>
+                        </thead>
+                        <tbody id="annualTableBody" class="divide-y divide-slate-200 text-sm">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- MODALS -->
+
+    <!-- Modal Cliente -->
+    <div id="clientModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4">
+            <h3 class="text-lg font-bold text-slate-900">Registrar Nuevo Cliente</h3>
+            <form id="clientForm" onsubmit="saveClient(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Nombre Completo</label>
+                    <input type="text" id="clientName" required class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Número de Teléfono</label>
+                    <input type="text" id="clientPhone" required class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Correo Electrónico</label>
+                    <input type="email" id="clientEmail" required class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Estado Inicial</label>
+                    <select id="clientStatus" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm bg-white">
+                        <option value="Esporádico">Esporádico</option>
+                        <option value="Ocasional">Ocasional</option>
+                        <option value="Recurrente">Recurrente</option>
+                    </select>
+                </div>
+                <div class="flex justify-end space-x-3 pt-3">
+                    <button type="button" onclick="closeClientModal()" class="px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium shadow">Guardar Cliente</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Inventario -->
+    <div id="inventoryModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4">
+            <h3 class="text-lg font-bold text-slate-900">Ingreso de Inventario</h3>
+            <form id="inventoryForm" onsubmit="saveInventory(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Buscar Producto Existente</label>
+                    <input type="text" id="invSearchInput" oninput="filterInventorySelect()" placeholder="Escriba para filtrar productos..." class="w-full border border-slate-300 rounded-lg p-2.5 text-sm bg-white focus:ring-2 focus:ring-indigo-500 outline-none mb-2">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Seleccionar Producto</label>
+                    <select id="invProductSelect" onchange="onSelectExistingProduct(event)" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm bg-white">
+                        <option value="">-- Nuevo Producto --</option>
+                    </select>
+                </div>
+                <div id="newProductNameContainer">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Nombre del Nuevo Producto</label>
+                    <input type="text" id="invNewName" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Cantidad a Ingresar</label>
+                        <input type="number" id="invQty" min="1" required class="w-full border border-slate-300 rounded-lg p-2.5 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Costo Unitario ($)</label>
+                        <input type="number" id="invCost" step="0.01" min="0" required class="w-full border border-slate-300 rounded-lg p-2.5 text-sm">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Precio de Venta ($)</label>
+                        <input type="number" id="invPrice" step="0.01" min="0" required oninput="calcMarginFromPrice()" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">% Ganancia</label>
+                        <input type="number" id="invMargin" step="0.1" min="0" required oninput="calcPriceFromMargin()" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm">
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-3 pt-3">
+                    <button type="button" onclick="closeInventoryModal()" class="px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium shadow">Ingresar Stock</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Gasto Esporádico -->
+    <div id="sporadicModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4">
+            <h3 class="text-lg font-bold text-slate-900">Registrar Gasto Esporádico</h3>
+            <form id="sporadicForm" onsubmit="saveSporadicExpense(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Día del Periodo (1-30)</label>
+                    <input type="number" id="sporadicDay" min="1" max="30" value="1" required class="w-full border border-slate-300 rounded-lg p-2.5 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Descripción del Gasto</label>
+                    <input type="text" id="sporadicDesc" required placeholder="Ej. Reparación urgente de tubería" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Monto ($)</label>
+                    <input type="number" id="sporadicAmount" step="0.01" min="0" required class="w-full border border-slate-300 rounded-lg p-2.5 text-sm">
+                </div>
+                <div class="flex justify-end space-x-3 pt-3">
+                    <button type="button" onclick="closeSporadicExpenseModal()" class="px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-medium shadow">Guardar Gasto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Gastos Fijos -->
+    <div id="fixedModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4">
+            <h3 class="text-lg font-bold text-slate-900">Configurar Gastos Fijos Mensuales</h3>
+            <form id="fixedForm" onsubmit="saveFixedExpenses(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Nómina Mensual ($)</label>
+                    <input type="number" id="fixNomina" step="0.01" min="0" required class="w-full border border-slate-300 rounded-lg p-2.5 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Arriendo Mensual ($)</label>
+                    <input type="number" id="fixArriendo" step="0.01" min="0" required class="w-full border border-slate-300 rounded-lg p-2.5 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Servicios Públicos ($)</label>
+                    <input type="number" id="fixServicios" step="0.01" min="0" required class="w-full border border-slate-300 rounded-lg p-2.5 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Otros Gastos Fijos ($)</label>
+                    <input type="number" id="fixOtros" step="0.01" min="0" required class="w-full border border-slate-300 rounded-lg p-2.5 text-sm">
+                </div>
+                <div class="flex justify-end space-x-3 pt-3">
+                    <button type="button" onclick="closeFixedExpensesModal()" class="px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium shadow">Guardar Gastos</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Comprobante / Factura -->
+    <div id="receiptModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div id="receiptContent" class="space-y-4 text-sm">
+                <!-- Dinámico -->
+            </div>
+            <div class="flex justify-end space-x-3 pt-3 border-t">
+                <button onclick="window.print()" class="px-4 py-2 bg-slate-800 text-white rounded-lg text-sm font-medium hover:bg-slate-900"><i class="fa-solid fa-print mr-1"></i> Imprimir</button>
+                <button onclick="closeReceiptModal()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        const MASTER_CODE = "1150686779";
+        let currentCompany = null;
+        let db = {
+            clients: [],
+            inventory: [],
+            sales: [],
+            movements: [],
+            sporadicExpenses: [],
+            fixedExpenses: { nomina: 0, arriendo: 0, servicios: 0, otros: 0 }
+        };
+
+        let currentCart = [];
+        let annualChartInstance = null;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            updateDeleteCompanySelect();
+        });
+
+        // Default sample data template
+        function getDefaultCompanyData() {
+            return {
+                clients: [
+                    { id: 1, name: "Carlos Mendoza", phone: "3001234567", email: "carlos@gmail.com", status: "Recurrente", lastPurchase: "2026-03-12" },
+                    { id: 2, name: "Ana María Gómez", phone: "3109876543", email: "ana.gomez@yahoo.com", status: "Ocasional", lastPurchase: "2026-03-05" }
+                ],
+                inventory: [
+                    { id: 1, name: "Rodamiento Industrial A", qty: 20, cost: 15.00, price: 25.00, margin: 40.0 },
+                    { id: 2, name: "Retenedor de Aceite B", qty: 50, cost: 5.00, price: 9.00, margin: 44.4 }
+                ],
+                sales: [],
+                movements: [
+                    { date: "2026-03-01 08:00", type: "Sistema", desc: "Inicialización de cuenta de empresa", impact: "Registro" }
+                ],
+                sporadicExpenses: [],
+                fixedExpenses: { nomina: 1500.00, arriendo: 800.00, servicios: 200.00, otros: 100.00 }
+            };
+        }
+
+        // Auth Management
+        function switchAuthMode(mode) {
+            document.getElementById('formLogin').classList.add('hidden');
+            document.getElementById('formRegister').classList.add('hidden');
+            document.getElementById('formManage').classList.add('hidden');
+            
+            document.getElementById('tabLogin').className = "flex-1 pb-3 text-sm font-medium text-slate-400 hover:text-slate-600 transition";
+            document.getElementById('tabRegister').className = "flex-1 pb-3 text-sm font-medium text-slate-400 hover:text-slate-600 transition";
+            document.getElementById('tabManage').className = "flex-1 pb-3 text-sm font-medium text-slate-400 hover:text-slate-600 transition";
+
+            if (mode === 'login') {
+                document.getElementById('formLogin').classList.remove('hidden');
+                document.getElementById('tabLogin').className = "flex-1 pb-3 text-sm font-semibold text-indigo-600 border-b-2 border-indigo-600 transition";
+            } else if (mode === 'register') {
+                document.getElementById('formRegister').classList.remove('hidden');
+                document.getElementById('tabRegister').className = "flex-1 pb-3 text-sm font-semibold text-emerald-600 border-b-2 border-emerald-600 transition";
+            } else if (mode === 'manage') {
+                document.getElementById('formManage').classList.remove('hidden');
+                document.getElementById('tabManage').className = "flex-1 pb-3 text-sm font-semibold text-rose-600 border-b-2 border-rose-600 transition";
+                updateDeleteCompanySelect();
+            }
+        }
+
+        function updateDeleteCompanySelect() {
+            const select = document.getElementById('deleteCompanySelect');
+            if (!select) return;
+            select.innerHTML = '';
+            const users = JSON.parse(localStorage.getItem('empresapro_users') || '{}');
+            const userKeys = Object.keys(users);
+
+            if (userKeys.length === 0) {
+                select.innerHTML = '<option value="">No hay empresas registradas</option>';
+                return;
+            }
+
+            userKeys.forEach(k => {
+                select.innerHTML += `<option value="${k}">${k}</option>`;
+            });
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const username = document.getElementById('loginUser').value.trim();
+            const pass = document.getElementById('loginPass').value;
+
+            const users = JSON.parse(localStorage.getItem('empresapro_users') || '{}');
+
+            if (!users[username]) {
+                alert("La empresa o usuario no existe. Regístrese primero.");
+                return;
+            }
+
+            if (users[username].pass !== pass) {
+                alert("Contraseña incorrecta.");
+                return;
+            }
+
+            currentCompany = username;
+            db = users[username].data;
+            document.getElementById('currentCompanyBadge').innerText = username;
+            document.getElementById('authOverlay').classList.add('hidden');
+            initializeAppUI();
+        }
+
+        function handleRegister(e) {
+            e.preventDefault();
+            const username = document.getElementById('regUser').value.trim();
+            const pass = document.getElementById('regPass').value;
+            const masterCode = document.getElementById('regMasterCode').value.trim();
+
+            if (masterCode !== MASTER_CODE) {
+                alert("Código maestro de desarrollador incorrecto.");
+                return;
+            }
+
+            let users = JSON.parse(localStorage.getItem('empresapro_users') || '{}');
+
+            if (users[username]) {
+                alert("El nombre de usuario/empresa ya está registrado.");
+                return;
+            }
+
+            users[username] = {
+                pass: pass,
+                data: getDefaultCompanyData()
+            };
+
+            localStorage.setItem('empresapro_users', JSON.stringify(users));
+            alert("¡Empresa registrada con éxito! Ahora inicie sesión.");
+            switchAuthMode('login');
+            document.getElementById('formRegister').reset();
+            updateDeleteCompanySelect();
+        }
+
+        function handleDeleteCompany(e) {
+            e.preventDefault();
+            const companyToDelete = document.getElementById('deleteCompanySelect').value;
+            const masterCode = document.getElementById('delMasterCode').value.trim();
+
+            if (!companyToDelete) {
+                alert("Seleccione una empresa válida para eliminar.");
+                return;
+            }
+
+            if (masterCode !== MASTER_CODE) {
+                alert("Código maestro de desarrollador incorrecto. No se puede eliminar la empresa.");
+                return;
+            }
+
+            if (!confirm(`¿Está completamente seguro que desea eliminar la empresa "${companyToDelete}" y todos sus datos asociados?`)) {
+                return;
+            }
+
+            let users = JSON.parse(localStorage.getItem('empresapro_users') || '{}');
+            if (users[companyToDelete]) {
+                delete users[companyToDelete];
+                localStorage.setItem('empresapro_users', JSON.stringify(users));
+                alert(`La empresa "${companyToDelete}" ha sido eliminada exitosamente.`);
+                document.getElementById('formManage').reset();
+                updateDeleteCompanySelect();
+                switchAuthMode('login');
+            } else {
+                alert("La empresa seleccionada no existe en la base de datos.");
+            }
+        }
+
+        function saveCurrentCompanyData() {
+            if (!currentCompany) return;
+            let users = JSON.parse(localStorage.getItem('empresapro_users') || '{}');
+            if (users[currentCompany]) {
+                users[currentCompany].data = db;
+                localStorage.setItem('empresapro_users', JSON.stringify(users));
+                alert("¡Datos de la empresa guardados correctamente en la base de datos local!");
+            }
+        }
+
+        function logout() {
+            saveCurrentCompanyData();
+            currentCompany = null;
+            window.location.reload();
+        }
+
+        function initializeAppUI() {
+            renderClients();
+            renderInventory();
+            renderSaleSelects();
+            renderSalesRanking();
+            renderTransactions();
+            renderMovements();
+            renderMonthlyState();
+            renderAnnualState();
+        }
+
+        // Tab Navigation
+        function switchTab(tabId) {
+            const tabs = ['clientes', 'inventario', 'ventas', 'registro-ventas', 'movimientos', 'estado-mensual', 'estado-anual'];
+            tabs.forEach(t => {
+                document.getElementById(`tab-${t}`).classList.add('hidden');
+                document.getElementById(`nav-${t}`).className = "w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition";
+            });
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            document.getElementById(`nav-${tabId}`).className = "w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium text-indigo-700 bg-indigo-50 transition";
+            
+            if (tabId === 'estado-anual') {
+                renderAnnualState();
+            }
+        }
+
+        // --- CLIENTES ---
+        function renderClients() {
+            const tbody = document.getElementById('clientsTableBody');
+            tbody.innerHTML = '';
+            db.clients.forEach(c => {
+                let badgeColor = 'bg-slate-100 text-slate-700';
+                if (c.status === 'Recurrente') badgeColor = 'bg-emerald-100 text-emerald-800';
+                if (c.status === 'Ocasional') badgeColor = 'bg-blue-100 text-blue-800';
+                if (c.status === 'Esporádico') badgeColor = 'bg-amber-100 text-amber-800';
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-3 font-medium text-slate-900">${c.name}</td>
+                        <td class="p-3 text-slate-600">${c.phone}</td>
+                        <td class="p-3 text-slate-600">${c.email}</td>
+                        <td class="p-3"><span class="px-2.5 py-1 rounded-full text-xs font-semibold ${badgeColor}">${c.status}</span></td>
+                        <td class="p-3 text-slate-600">${c.lastPurchase || 'Sin compras'}</td>
+                        <td class="p-3 text-right">
+                            <button onclick="deleteClient(${c.id})" class="text-rose-600 hover:text-rose-800 text-xs font-medium"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function openClientModal() { document.getElementById('clientModal').classList.remove('hidden'); document.getElementById('clientModal').classList.add('flex'); }
+        function closeClientModal() { document.getElementById('clientModal').classList.add('hidden'); document.getElementById('clientModal').classList.remove('flex'); document.getElementById('clientForm').reset(); }
+
+        function saveClient(e) {
+            e.preventDefault();
+            const newClient = {
+                id: Date.now(),
+                name: document.getElementById('clientName').value,
+                phone: document.getElementById('clientPhone').value,
+                email: document.getElementById('clientEmail').value,
+                status: document.getElementById('clientStatus').value,
+                lastPurchase: null
+            };
+            db.clients.push(newClient);
+            db.movements.unshift({ date: new Date().toISOString().replace('T', ' ').substring(0, 16), type: "Cliente Nuevo", desc: `Registro de cliente ${newClient.name}`, impact: "Base Datos" });
+            closeClientModal();
+            renderClients();
+            renderSaleSelects();
+            saveCurrentCompanyData();
+        }
+
+        function deleteClient(id) {
+            db.clients = db.clients.filter(c => c.id !== id);
+            renderClients();
+            renderSaleSelects();
+            saveCurrentCompanyData();
+        }
+
+        // --- INVENTARIO & PROMEDIO PONDERADO ---
+        function renderInventory() {
+            const tbody = document.getElementById('inventoryTableBody');
+            tbody.innerHTML = '';
+            db.inventory.forEach(i => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-3 font-medium text-slate-900">${i.name}</td>
+                        <td class="p-3 text-center font-semibold text-slate-700">${i.qty}</td>
+                        <td class="p-3 text-right text-slate-600">$${i.cost.toFixed(2)}</td>
+                        <td class="p-3 text-right text-slate-600">$${i.price.toFixed(2)}</td>
+                        <td class="p-3 text-right text-emerald-600 font-medium">${i.margin.toFixed(1)}%</td>
+                        <td class="p-3 text-right">
+                            <button onclick="deleteInventoryItem(${i.id})" class="text-rose-600 hover:text-rose-800 text-xs font-medium"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function openInventoryModal() {
+            document.getElementById('invSearchInput').value = '';
+            populateInventorySelect('');
+            document.getElementById('inventoryModal').classList.remove('hidden');
+            document.getElementById('inventoryModal').classList.add('flex');
+            document.getElementById('newProductNameContainer').style.display = 'block';
+        }
+
+        function populateInventorySelect(filter = '') {
+            const select = document.getElementById('invProductSelect');
+            select.innerHTML = '<option value="">-- Nuevo Producto --</option>';
+            const q = filter.toLowerCase().trim();
+            db.inventory.forEach(i => {
+                if (!q || i.name.toLowerCase().includes(q)) {
+                    select.innerHTML += `<option value="${i.id}">${i.name} (Stock actual: ${i.qty})</option>`;
+                }
+            });
+        }
+
+        function filterInventorySelect() {
+            const q = document.getElementById('invSearchInput').value;
+            populateInventorySelect(q);
+        }
+
+        function closeInventoryModal() {
+            document.getElementById('inventoryModal').classList.add('hidden');
+            document.getElementById('inventoryModal').classList.remove('flex');
+            document.getElementById('inventoryForm').reset();
+        }
+
+        function onSelectExistingProduct(e) {
+            const val = e.target.value;
+            const nameContainer = document.getElementById('newProductNameContainer');
+            if (val) {
+                nameContainer.style.display = 'none';
+                const item = db.inventory.find(i => i.id == val);
+                if (item) {
+                    document.getElementById('invCost').value = item.cost;
+                    document.getElementById('invPrice').value = item.price;
+                    document.getElementById('invMargin').value = item.margin;
+                }
+            } else {
+                nameContainer.style.display = 'block';
+                document.getElementById('inventoryForm').reset();
+            }
+        }
+
+        function calcMarginFromPrice() {
+            const cost = parseFloat(document.getElementById('invCost').value) || 0;
+            const price = parseFloat(document.getElementById('invPrice').value) || 0;
+            if (cost > 0 && price >= cost) {
+                const margin = ((price - cost) / price) * 100;
+                document.getElementById('invMargin').value = margin.toFixed(1);
+            }
+        }
+
+        function calcPriceFromMargin() {
+            const cost = parseFloat(document.getElementById('invCost').value) || 0;
+            const margin = parseFloat(document.getElementById('invMargin').value) || 0;
+            if (cost > 0 && margin < 100) {
+                const price = cost / (1 - (margin / 100));
+                document.getElementById('invPrice').value = price.toFixed(2);
+            }
+        }
+
+        function saveInventory(e) {
+            e.preventDefault();
+            const existingId = document.getElementById('invProductSelect').value;
+            const qtyToAdd = parseInt(document.getElementById('invQty').value);
+            const newCost = parseFloat(document.getElementById('invCost').value);
+            const newPrice = parseFloat(document.getElementById('invPrice').value);
+            const newMargin = parseFloat(document.getElementById('invMargin').value);
+
+            let itemName = "";
+
+            if (existingId) {
+                let item = db.inventory.find(i => i.id == existingId);
+                itemName = item.name;
+                let totalQty = item.qty + qtyToAdd;
+                let totalCostValue = (item.qty * item.cost) + (qtyToAdd * newCost);
+                item.cost = totalCostValue / totalQty;
+                item.qty = totalQty;
+                item.price = newPrice;
+                item.margin = newMargin;
+            } else {
+                itemName = document.getElementById('invNewName').value;
+                const newItem = {
+                    id: Date.now(),
+                    name: itemName,
+                    qty: qtyToAdd,
+                    cost: newCost,
+                    price: newPrice,
+                    margin: newMargin
+                };
+                db.inventory.push(newItem);
+            }
+
+            db.movements.unshift({
+                date: new Date().toISOString().replace('T', ' ').substring(0, 16),
+                type: "Ingreso de Inventario",
+                desc: `Ingreso de ${qtyToAdd} unidades de ${itemName} (Costo: $${newCost.toFixed(2)})`,
+                impact: `+${qtyToAdd} Stock`
+            });
+
+            closeInventoryModal();
+            renderInventory();
+            renderSaleSelects();
+            renderMonthlyState();
+            renderAnnualState();
+            saveCurrentCompanyData();
+        }
+
+        function deleteInventoryItem(id) {
+            db.inventory = db.inventory.filter(i => i.id !== id);
+            renderInventory();
+            renderSaleSelects();
+            saveCurrentCompanyData();
+        }
+
+        // --- VENTAS & BUSCADOR DE CLIENTES ---
+        function renderSaleSelects(filterQuery = '') {
+            const clientSelect = document.getElementById('saleClient');
+            clientSelect.innerHTML = '';
+            
+            const q = filterQuery.toLowerCase().trim();
+            const filteredClients = db.clients.filter(c => 
+                c.name.toLowerCase().includes(q) || 
+                c.phone.toLowerCase().includes(q) || 
+                c.email.toLowerCase().includes(q)
+            );
+
+            filteredClients.forEach(c => {
+                clientSelect.innerHTML += `<option value="${c.id}">${c.name} — Tel: ${c.phone} (${c.status})</option>`;
+            });
+
+            if (filteredClients.length === 0) {
+                clientSelect.innerHTML = `<option value="">No se encontraron clientes</option>`;
+            }
+
+            const prodSelect = document.getElementById('saleProductSelect');
+            prodSelect.innerHTML = '';
+            db.inventory.forEach(i => {
+                prodSelect.innerHTML += `<option value="${i.id}">${i.name} - Stock: ${i.qty} - $${i.price.toFixed(2)}</option>`;
+            });
+        }
+
+        function filterClientsList() {
+            const q = document.getElementById('clientSearchInput').value;
+            renderSaleSelects(q);
+        }
+
+        function addItemToCart() {
+            const prodId = document.getElementById('saleProductSelect').value;
+            const qty = parseInt(document.getElementById('saleQtyInput').value);
+            if (!prodId || isNaN(qty) || qty <= 0) return;
+
+            const product = db.inventory.find(i => i.id == prodId);
+            if (!product) return;
+
+            if (qty > product.qty) {
+                alert(`Stock insuficiente. Solo hay ${product.qty} unidades disponibles.`);
+                return;
+            }
+
+            let existing = currentCart.find(item => item.productId == prodId);
+            if (existing) {
+                if (existing.qty + qty > product.qty) {
+                    alert("La cantidad total supera el stock disponible.");
+                    return;
+                }
+                existing.qty += qty;
+                existing.subtotal = existing.qty * existing.price;
+            } else {
+                currentCart.push({
+                    productId: product.id,
+                    name: product.name,
+                    qty: qty,
+                    price: product.price,
+                    cost: product.cost,
+                    subtotal: qty * product.price
+                });
+            }
+            renderCart();
+        }
+
+        function renderCart() {
+            const tbody = document.getElementById('cartTableBody');
+            tbody.innerHTML = '';
+            let total = 0;
+            currentCart.forEach((item, index) => {
+                total += item.subtotal;
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="p-2.5 font-medium">${item.name}</td>
+                        <td class="p-2.5 text-center">${item.qty}</td>
+                        <td class="p-2.5 text-right">$${item.price.toFixed(2)}</td>
+                        <td class="p-2.5 text-right">$${item.subtotal.toFixed(2)}</td>
+                        <td class="p-2.5 text-center">
+                            <button onclick="removeFromCart(${index})" class="text-rose-600 hover:text-rose-800 text-xs"><i class="fa-solid fa-xmark"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+            document.getElementById('cartSubtotal').innerText = `$${total.toFixed(2)}`;
+            document.getElementById('cartTotal').innerText = `$${total.toFixed(2)}`;
+        }
+
+        function removeFromCart(index) {
+            currentCart.splice(index, 1);
+            renderCart();
+        }
+
+        function processSale() {
+            if (currentCart.length === 0) {
+                alert("El carrito de compras está vacío.");
+                return;
+            }
+
+            const clientId = document.getElementById('saleClient').value;
+            if (!clientId) {
+                alert("Por favor seleccione un cliente válido.");
+                return;
+            }
+            const client = db.clients.find(c => c.id == clientId);
+            if (!client) return;
+
+            let totalSale = 0;
+            let totalCost = 0;
+
+            currentCart.forEach(cartItem => {
+                const invItem = db.inventory.find(i => i.id == cartItem.productId);
+                if (invItem) {
+                    invItem.qty -= cartItem.qty;
+                }
+                totalSale += cartItem.subtotal;
+                totalCost += (cartItem.qty * cartItem.cost);
+            });
+
+            const grossProfit = totalSale - totalCost;
+            const now = new Date();
+            const dateStr = now.toISOString().split('T')[0];
+            const month = now.getMonth() + 1;
+            const day = now.getDate();
+
+            const invoiceId = `FAC-${Math.floor(1000 + Math.random() * 9000)}`;
+
+            const newSale = {
+                id: invoiceId,
+                date: dateStr,
+                month: month,
+                day: day > 30 ? 30 : day,
+                clientId: client.id,
+                clientName: client.name,
+                items: [...currentCart],
+                subtotal: totalSale,
+                total: totalSale,
+                grossProfit: grossProfit
+            };
+
+            db.sales.unshift(newSale);
+
+            client.lastPurchase = dateStr;
+            const clientSalesCount = db.sales.filter(s => s.clientId == client.id).length;
+            if (clientSalesCount >= 3) client.status = "Recurrente";
+            else if (clientSalesCount === 2) client.status = "Ocasional";
+            else client.status = "Esporádico";
+
+            db.movements.unshift({
+                date: now.toISOString().replace('T', ' ').substring(0, 16),
+                type: "Venta",
+                desc: `Factura ${invoiceId} emitida a ${client.name}`,
+                impact: `+$${totalSale.toFixed(2)}`
+            });
+
+            showReceipt(newSale);
+
+            currentCart = [];
+            renderCart();
+            renderInventory();
+            renderClients();
+            renderSalesRanking();
+            renderTransactions();
+            renderMovements();
+            renderMonthlyState();
+            renderAnnualState();
+            saveCurrentCompanyData();
+        }
+
+        // --- COMPROBANTE DE VENTA ---
+        function showReceipt(sale) {
+            const content = document.getElementById('receiptContent');
+            let itemsHtml = '';
+            sale.items.forEach(it => {
+                itemsHtml += `
+                    <tr>
+                        <td class="py-1">${it.name}</td>
+                        <td class="py-1 text-center">${it.qty}</td>
+                        <td class="py-1 text-right">$${it.price.toFixed(2)}</td>
+                        <td class="py-1 text-right">$${it.subtotal.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+
+            content.innerHTML = `
+                <div class="text-center space-y-1 border-b pb-3">
+                    <h2 class="font-bold text-lg text-indigo-900">${currentCompany.toUpperCase()}</h2>
+                    <p class="text-xs text-slate-500">Comprobante de Venta</p>
+                    <p class="text-xs font-semibold text-slate-700">${sale.id}</p>
+                </div>
+                <div class="text-xs space-y-1 py-2">
+                    <p><strong>Fecha:</strong> ${sale.date}</p>
+                    <p><strong>Cliente:</strong> ${sale.clientName}</p>
+                </div>
+                <table class="w-full text-left text-xs border-collapse">
+                    <thead>
+                        <tr class="border-b text-slate-500">
+                            <th class="py-1">Mercancía</th>
+                            <th class="py-1 text-center">Cant</th>
+                            <th class="py-1 text-right">Precio</th>
+                            <th class="py-1 text-right">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        ${itemsHtml}
+                    </tbody>
+                </table>
+                <div class="border-t pt-2 space-y-1 text-right text-sm">
+                    <p class="font-bold text-slate-900">Total Factura: $${sale.total.toFixed(2)}</p>
+                </div>
+                <div class="text-center text-xs text-slate-400 pt-4">
+                    ¡Gracias por su compra! Comprobante generado electrónicamente.
+                </div>
+            `;
+            document.getElementById('receiptModal').classList.remove('hidden');
+            document.getElementById('receiptModal').classList.add('flex');
+        }
+
+        function closeReceiptModal() {
+            document.getElementById('receiptModal').classList.add('hidden');
+            document.getElementById('receiptModal').classList.remove('flex');
+        }
+
+        // --- REGISTRO DE VENTAS & RANKING ---
+        function renderSalesRanking() {
+            let productSalesMap = {};
+            db.sales.forEach(sale => {
+                sale.items.forEach(item => {
+                    if (!productSalesMap[item.productId]) {
+                        productSalesMap[item.productId] = { name: item.name, qty: 0, revenue: 0 };
+                    }
+                    productSalesMap[item.productId].qty += item.qty;
+                    productSalesMap[item.productId].revenue += item.subtotal;
+                });
+            });
+
+            let rankingArray = Object.values(productSalesMap).sort((a, b) => b.qty - a.qty);
+            const tbody = document.getElementById('salesRankingTableBody');
+            tbody.innerHTML = '';
+
+            rankingArray.forEach((prod, index) => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-3 font-bold text-indigo-600">#${index + 1}</td>
+                        <td class="p-3 font-medium text-slate-900">${prod.name}</td>
+                        <td class="p-3 text-center font-semibold text-slate-700">${prod.qty} unidades</td>
+                        <td class="p-3 text-right text-emerald-600 font-semibold">$${prod.revenue.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+            if (rankingArray.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-400">No hay ventas registradas aún.</td></tr>`;
+            }
+        }
+
+        function renderTransactions() {
+            const tbody = document.getElementById('transactionsTableBody');
+            tbody.innerHTML = '';
+            db.sales.forEach(sale => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-3 font-medium text-indigo-600">${sale.id}</td>
+                        <td class="p-3 text-slate-600">${sale.date}</td>
+                        <td class="p-3 text-slate-800">${sale.clientName}</td>
+                        <td class="p-3 text-right font-semibold text-slate-900">$${sale.total.toFixed(2)}</td>
+                        <td class="p-3 text-center">
+                            <button onclick="showReceiptFromHistory('${sale.id}')" class="text-indigo-600 hover:text-indigo-800 text-xs font-medium"><i class="fa-solid fa-file-lines mr-1"></i> Ver Comprobante</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function showReceiptFromHistory(id) {
+            const sale = db.sales.find(s => s.id === id);
+            if (sale) showReceipt(sale);
+        }
+
+        // --- HISTORIAL DE MOVIMIENTOS ---
+        function renderMovements() {
+            const tbody = document.getElementById('movementsTableBody');
+            tbody.innerHTML = '';
+            db.movements.forEach(m => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-3 text-slate-600 font-mono text-xs">${m.date}</td>
+                        <td class="p-3 font-medium text-slate-800">${m.type}</td>
+                        <td class="p-3 text-slate-600">${m.desc}</td>
+                        <td class="p-3 text-right font-semibold text-indigo-600">${m.impact}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        // --- ESTADO DE CUENTA MENSUAL ---
+        function renderMonthlyState() {
+            const month = parseInt(document.getElementById('selectMonth').value);
+            const tbody = document.getElementById('dailyPeriodTableBody');
+            tbody.innerHTML = '';
+
+            let totalSalesMonth = 0;
+            let totalGrossProfitMonth = 0;
+            let totalSporadicMonth = 0;
+
+            let dailySalesArr = new Array(31).fill(0);
+            let dailyGrossProfitArr = new Array(31).fill(0);
+            let dailySporadicArr = new Array(31).fill(0);
+
+            db.sales.filter(s => s.month == month).forEach(sale => {
+                let d = sale.day;
+                if (d >= 1 && d <= 30) {
+                    dailySalesArr[d] += sale.total;
+                    dailyGrossProfitArr[d] += sale.grossProfit;
+                }
+            });
+
+            db.sporadicExpenses.filter(sp => sp.month == month).forEach(sp => {
+                let d = sp.day;
+                if (d >= 1 && d <= 30) {
+                    dailySporadicArr[d] += sp.amount;
+                }
+            });
+
+            for (let day = 1; day <= 30; day++) {
+                let s = dailySalesArr[day];
+                let gp = dailyGrossProfitArr[day];
+                let sp = dailySporadicArr[day];
+                let netD = gp - sp;
+
+                totalSalesMonth += s;
+                totalGrossProfitMonth += gp;
+                totalSporadicMonth += sp;
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-3 font-medium text-slate-800">Día ${day}</td>
+                        <td class="p-3 text-right text-slate-700">$${s.toFixed(2)}</td>
+                        <td class="p-3 text-right text-emerald-600">$${gp.toFixed(2)}</td>
+                        <td class="p-3 text-right text-rose-600">$${sp.toFixed(2)}</td>
+                        <td class="p-3 text-right font-semibold text-indigo-700">$${netD.toFixed(2)}</td>
+                    </tr>
+                `;
+            }
+
+            let netProfitMonth = totalGrossProfitMonth - totalSporadicMonth;
+
+            document.getElementById('monthlyTotalSales').innerText = `$${totalSalesMonth.toFixed(2)}`;
+            document.getElementById('monthlyGrossProfit').innerText = `$${totalGrossProfitMonth.toFixed(2)}`;
+            document.getElementById('monthlySporadicExpenses').innerText = `$${totalSporadicMonth.toFixed(2)}`;
+            document.getElementById('monthlyNetProfit').innerText = `$${netProfitMonth.toFixed(2)}`;
+        }
+
+        function openSporadicExpenseModal() { document.getElementById('sporadicModal').classList.remove('hidden'); document.getElementById('sporadicModal').classList.add('flex'); }
+        function closeSporadicExpenseModal() { document.getElementById('sporadicModal').classList.add('hidden'); document.getElementById('sporadicModal').classList.remove('flex'); document.getElementById('sporadicForm').reset(); }
+
+        function saveSporadicExpense(e) {
+            e.preventDefault();
+            const month = parseInt(document.getElementById('selectMonth').value);
+            const day = parseInt(document.getElementById('sporadicDay').value);
+            const desc = document.getElementById('sporadicDesc').value;
+            const amount = parseFloat(document.getElementById('sporadicAmount').value);
+
+            db.sporadicExpenses.push({ month, day, desc, amount });
+            db.movements.unshift({
+                date: new Date().toISOString().replace('T', ' ').substring(0, 16),
+                type: "Gasto Esporádico",
+                desc: `${desc} (Mes ${month}, Día ${day})`,
+                impact: `-$${amount.toFixed(2)}`
+            });
+
+            closeSporadicExpenseModal();
+            renderMonthlyState();
+            renderAnnualState();
+            saveCurrentCompanyData();
+        }
+
+        // --- ESTADO DE CUENTA ANUAL & GRÁFICA LINEAL ---
+        function renderAnnualState() {
+            const tbody = document.getElementById('annualTableBody');
+            tbody.innerHTML = '';
+
+            let totalAnnualSales = 0;
+            let totalAnnualOpCost = 0;
+            let totalAnnualRealProfit = 0;
+
+            const monthsNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+            
+            const monthlyFixed = db.fixedExpenses.nomina + db.fixedExpenses.arriendo + db.fixedExpenses.servicios + db.fixedExpenses.otros;
+
+            let chartSalesData = [];
+            let chartOpCostData = [];
+            let chartProfitData = [];
+
+            for (let m = 1; m <= 12; m++) {
+                let monthSales = 0;
+                let monthGrossProfit = 0;
+                db.sales.filter(s => s.month == m).forEach(s => {
+                    monthSales += s.total;
+                    monthGrossProfit += s.grossProfit;
+                });
+
+                let monthSporadic = 0;
+                db.sporadicExpenses.filter(sp => sp.month == m).forEach(sp => {
+                    monthSporadic += sp.amount;
+                });
+
+                let monthOpCost = monthlyFixed + monthSporadic;
+                let monthRealProfit = monthGrossProfit - monthOpCost;
+
+                totalAnnualSales += monthSales;
+                totalAnnualOpCost += monthOpCost;
+                totalAnnualRealProfit += monthRealProfit;
+
+                chartSalesData.push(monthSales);
+                chartOpCostData.push(monthOpCost);
+                chartProfitData.push(monthRealProfit);
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-3 font-medium text-slate-900">${monthsNames[m-1]}</td>
+                        <td class="p-3 text-right text-slate-700">$${monthSales.toFixed(2)}</td>
+                        <td class="p-3 text-right text-emerald-600">$${monthGrossProfit.toFixed(2)}</td>
+                        <td class="p-3 text-right text-rose-600">$${monthSporadic.toFixed(2)}</td>
+                        <td class="p-3 text-right text-amber-600">$${monthlyFixed.toFixed(2)}</td>
+                        <td class="p-3 text-right font-semibold text-indigo-700">$${monthRealProfit.toFixed(2)}</td>
+                    </tr>
+                `;
+            }
+
+            document.getElementById('annualSales').innerText = `$${totalAnnualSales.toFixed(2)}`;
+            document.getElementById('annualOpCost').innerText = `$${totalAnnualOpCost.toFixed(2)}`;
+            document.getElementById('annualMinSales').innerText = `$${(totalAnnualOpCost * 1.25).toFixed(2)}`;
+            document.getElementById('annualRealProfit').innerText = `$${totalAnnualRealProfit.toFixed(2)}`;
+
+            const ctx = document.getElementById('annualLineChart').getContext('2d');
+            if (annualChartInstance) {
+                annualChartInstance.destroy();
+            }
+
+            annualChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: monthsNames,
+                    datasets: [
+                        {
+                            label: 'Ventas ($)',
+                            data: chartSalesData,
+                            borderColor: 'rgb(79, 70, 229)',
+                            backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                            tension: 0.3,
+                            fill: true
+                        },
+                        {
+                            label: 'Costo de Operación ($)',
+                            data: chartOpCostData,
+                            borderColor: 'rgb(225, 29, 72)',
+                            backgroundColor: 'rgba(225, 29, 72, 0.1)',
+                            tension: 0.3,
+                            fill: false
+                        },
+                        {
+                            label: 'Ganancias Reales ($)',
+                            data: chartProfitData,
+                            borderColor: 'rgb(16, 185, 129)',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            tension: 0.3,
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        function openFixedExpensesModal() {
+            document.getElementById('fixNomina').value = db.fixedExpenses.nomina;
+            document.getElementById('fixArriendo').value = db.fixedExpenses.arriendo;
+            document.getElementById('fixServicios').value = db.fixedExpenses.servicios;
+            document.getElementById('fixOtros').value = db.fixedExpenses.otros;
+            document.getElementById('fixedModal').classList.remove('hidden');
+            document.getElementById('fixedModal').classList.add('flex');
+        }
+
+        function closeFixedExpensesModal() {
+            document.getElementById('fixedModal').classList.add('hidden');
+            document.getElementById('fixedModal').classList.remove('flex');
+        }
+
+        function saveFixedExpenses(e) {
+            e.preventDefault();
+            db.fixedExpenses.nomina = parseFloat(document.getElementById('fixNomina').value);
+            db.fixedExpenses.arriendo = parseFloat(document.getElementById('fixArriendo').value);
+            db.fixedExpenses.servicios = parseFloat(document.getElementById('fixServicios').value);
+            db.fixedExpenses.otros = parseFloat(document.getElementById('fixOtros').value);
+
+            db.movements.unshift({
+                date: new Date().toISOString().replace('T', ' ').substring(0, 16),
+                type: "Estado de Cuenta Anual",
+                desc: "Actualización de gastos fijos mensuales",
+                impact: "Configuración"
+            });
+
+            closeFixedExpensesModal();
+            renderAnnualState();
+            saveCurrentCompanyData();
+        }
+
+        // Export / Import JSON
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db, null, 2));
+            const dlAnchor = document.createElement('a');
+            dlAnchor.setAttribute("href", dataStr);
+            dlAnchor.setAttribute("download", `${currentCompany}_backup_${new Date().toISOString().split('T')[0]}.json`);
+            document.body.appendChild(dlAnchor);
+            dlAnchor.click();
+            dlAnchor.remove();
+        }
+    </script>
+</body>
+</html>
