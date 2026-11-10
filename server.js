@@ -2,7 +2,7 @@ const express = require('express');
 const path = require('path');
 const app = express();
 
-// Railway asigna automáticamente un puerto mediante process.env.PORT
+// Railway asigna el puerto automáticamente y requiere '0.0.0.0' para escuchar tráfico externo
 const PORT = process.env.PORT || 3000;
 
 app.use(express.static(path.join(__dirname, 'public')));
